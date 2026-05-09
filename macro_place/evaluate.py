@@ -133,7 +133,7 @@ def evaluate_benchmark(placer, name: str, testcase_root: str, ng45_dir: str = No
     if ng45_dir:
         netlist_file = f"{ng45_dir}/netlist.pb.txt"
         plc_file = f"{ng45_dir}/initial.plc"
-        benchmark, plc = load_benchmark(netlist_file, plc_file)
+        benchmark, plc = load_benchmark(netlist_file, plc_file, name=name)
     else:
         benchmark_dir = f"{testcase_root}/{name}"
         benchmark, plc = load_benchmark_from_dir(benchmark_dir)
@@ -158,6 +158,7 @@ def evaluate_benchmark(placer, name: str, testcase_root: str, ng45_dir: str = No
         "replace_baseline": REPLACE_BASELINES.get(name),
         "placement": placement,
         "benchmark": benchmark,
+        "plc": plc,
     }
 
 
@@ -326,7 +327,7 @@ def main():
             vis_dir = Path("vis")
             vis_dir.mkdir(exist_ok=True)
             save_path = str(vis_dir / f"{name}.png")
-            visualize_placement(result["placement"], result["benchmark"], save_path=save_path)
+            visualize_placement(result["placement"], result["benchmark"], save_path=save_path, plc=result.get("plc"))
 
     if len(results) > 1:
         _print_summary_table(results)

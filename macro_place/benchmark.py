@@ -46,6 +46,28 @@ class Benchmark:
     grid_rows: int
     grid_cols: int
 
+    # I/O ports (pins on the chip boundary)
+    port_positions: torch.Tensor = field(default_factory=lambda: torch.zeros(0, 2))  # [num_ports, 2]
+
+    # Hard macro pin offsets (relative to macro center)
+    # List of [num_pins_i, 2] tensors, one per hard macro (indices [0, num_hard_macros))
+    macro_pin_offsets: List[torch.Tensor] = field(default_factory=list)
+
+    # Pin-level net connectivity (optional; empty list if not populated)
+    # Each net_pin_nodes[i] is an int64 tensor of shape [num_pins_in_net_i, 2] where:
+    #   column 0 = owner index:
+    #     - hard macros:  [0, num_hard_macros)
+    #     - soft macros:  [num_hard_macros, num_macros)
+    #     - I/O ports:    [num_macros, num_macros + num_ports)
+    #   column 1 = pin index within that owner:
+    #     - hard macro:   index into macro_pin_offsets[owner]
+    #     - soft macro:   always 0 (pins at macro center; soft macros carry no offsets)
+    #     - port:         always 0 (port is a single point at port_positions[owner-num_macros])
+    # Unlike net_nodes (which dedups to per-macro granularity), this preserves
+    # every pin endpoint — multiple pins on the same macro appear as multiple rows.
+    # Needed by placers computing pin-level HPWL for differentiable loss.
+    net_pin_nodes: List[torch.Tensor] = field(default_factory=list)
+
     # Routing parameters
     hroutes_per_micron: float = 11.285  # Horizontal routing tracks per micron
     vroutes_per_micron: float = 12.605  # Vertical routing tracks per micron
@@ -84,6 +106,11 @@ class Benchmark:
                 f"len(net_nodes) {len(self.net_nodes)} != num_nets {self.num_nets}"
             )
 
+        if len(self.net_pin_nodes) > 0:
+            assert len(self.net_pin_nodes) == self.num_nets, (
+                f"len(net_pin_nodes) {len(self.net_pin_nodes)} != num_nets {self.num_nets}"
+            )
+
         assert self.net_weights.shape == (self.num_nets,), (
             f"net_weights shape {self.net_weights.shape} != ({self.num_nets},)"
         )
@@ -109,6 +136,9 @@ class Benchmark:
                 "grid_cols": self.grid_cols,
                 "hroutes_per_micron": self.hroutes_per_micron,
                 "vroutes_per_micron": self.vroutes_per_micron,
+                "port_positions": self.port_positions,
+                "macro_pin_offsets": self.macro_pin_offsets,
+                "net_pin_nodes": self.net_pin_nodes,
                 "hard_macro_indices": self.hard_macro_indices,
                 "soft_macro_indices": self.soft_macro_indices,
             },
@@ -125,6 +155,12 @@ class Benchmark:
             data["num_soft_macros"] = 0
         if "soft_macro_indices" not in data:
             data["soft_macro_indices"] = []
+        if "port_positions" not in data:
+            data["port_positions"] = torch.zeros(0, 2)
+        if "macro_pin_offsets" not in data:
+            data["macro_pin_offsets"] = []
+        if "net_pin_nodes" not in data:
+            data["net_pin_nodes"] = []
         return cls(**data)
 
     def get_movable_mask(self) -> torch.Tensor:
