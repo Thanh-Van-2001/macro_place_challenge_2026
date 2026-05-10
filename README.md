@@ -7,9 +7,9 @@
 Partcl and Hudson River Trading are excited to co-host a competition to solve the macro placement problem. 
 
 > **🚀 Our submission lives here.** This fork is **Thanh-Van-2001**'s entry to the
-> challenge. Our placer (`submissions/hybrid_v12_multistart.py`) achieves **AVG 1.2099**
-> on the 17 IBM ICCAD04 benchmarks — beating the RePlAce baseline by **17.0%** and
-> the SA baseline by **43.1%**, all 17 VALID with 0 overlaps. Estimated leaderboard rank: **#3** (just past KLA MACH 1.2121, gap 0.18%). See [`SUBMISSION.md`](SUBMISSION.md) for full details, the
+> challenge. Our placer (`submissions/hybrid_v12_multistart.py`) achieves **AVG 1.2088**
+> on the 17 IBM ICCAD04 benchmarks — beating the RePlAce baseline by **17.1%** and
+> the SA baseline by **43.1%**, all 17 VALID with 0 overlaps. Estimated leaderboard rank: **#3** (just past KLA MACH 1.2121, gap 0.27%). See [`SUBMISSION.md`](SUBMISSION.md) for full details, the
 > hyperparameter sweep that produced this config, and how to reproduce.
 
 ---
