@@ -2,8 +2,8 @@
 
 **Team:** Thanh-Van-2001
 **Algorithm:** Tuned analytical placer + real-proxy multi-start — `submissions/hybrid_v12_multistart.py`
-**Score:** AVG **1.2088** across 17 IBM ICCAD04 benchmarks
-**Runtime:** ~82 min total on a 4-core CPU (≈4.8 min per benchmark, well under the 1 h/bench cap)
+**Score:** AVG **1.2075** across 17 IBM ICCAD04 benchmarks
+**Runtime:** ~122 min total on a 4-core CPU (≈7.2 min per benchmark, well under the 1 h/bench cap)
 **Validity:** All 17 benchmarks VALID, 0 overlaps
 
 ## Result vs baselines and competitors
@@ -12,37 +12,37 @@
 |---|---:|---:|
 | #1 vmallela (leaderboard) | 1.0109 | -16.6% |
 | #2 Cezar (leaderboard) | 1.037 | -14.5% |
-| **Ours (HybridV12)** | **1.2088** | — |
-| #3 KLA MACH (leaderboard) | 1.2121 | +0.27% |
+| **Ours (HybridV12)** | **1.2075** | — |
+| #3 KLA MACH (leaderboard) | 1.2121 | +0.38% |
 | #4 Hoop Dreams (leaderboard) | 1.2207 | +1.0% |
-| RePlAce baseline | 1.4578 | +20.6% |
-| SA baseline | 2.1251 | +75.8% |
+| RePlAce baseline | 1.4578 | +20.7% |
+| SA baseline | 2.1251 | +75.9% |
 
-We beat the RePlAce baseline by **17.1%** on average proxy cost and the SA
-baseline by **43.1%**. Estimated leaderboard rank: **3** (just past KLA MACH).
+We beat the RePlAce baseline by **17.2%** on average proxy cost and the SA
+baseline by **43.2%**. Estimated leaderboard rank: **3** (just past KLA MACH).
 
 ## Per-benchmark detail
 
 | Benchmark | Ours | RePlAce | vs RePlAce |
 |---|---:|---:|---:|
-| ibm01 | 0.9097 | 0.9976 | +8.8% |
-| ibm02 | 1.2863 | 1.8370 | +30.0% |
-| ibm03 | 1.1037 | 1.3222 | +16.5% |
-| ibm04 | 1.1238 | 1.3024 | +13.7% |
-| ibm06 | 1.3050 | 1.6187 | +19.4% |
-| ibm07 | 1.2227 | 1.4633 | +16.4% |
-| ibm08 | 1.2304 | 1.4285 | +13.9% |
-| ibm09 | 0.9357 | 1.1194 | +16.4% |
-| ibm10 | 1.1744 | 1.5009 | +21.8% |
-| ibm11 | 0.9666 | 1.1774 | +17.9% |
-| ibm12 | 1.4052 | 1.7261 | +18.6% |
-| ibm13 | 1.0566 | 1.3355 | +20.9% |
-| ibm14 | 1.3015 | 1.5436 | +15.7% |
-| ibm15 | 1.3439 | 1.5159 | +11.3% |
-| ibm16 | 1.2389 | 1.4780 | +16.2% |
-| ibm17 | 1.4338 | 1.6446 | +12.8% |
-| ibm18 | 1.5115 | 1.7722 | +14.7% |
-| **AVG** | **1.2088** | 1.4578 | **+17.1%** |
+| ibm01 | 0.9112 | 0.9976 | +8.7% |
+| ibm02 | 1.2891 | 1.8370 | +29.8% |
+| ibm03 | 1.1024 | 1.3222 | +16.6% |
+| ibm04 | 1.1225 | 1.3024 | +13.8% |
+| ibm06 | 1.3063 | 1.6187 | +19.3% |
+| ibm07 | 1.2158 | 1.4633 | +16.9% |
+| ibm08 | 1.2248 | 1.4285 | +14.3% |
+| ibm09 | 0.9404 | 1.1194 | +16.0% |
+| ibm10 | 1.1734 | 1.5009 | +21.8% |
+| ibm11 | 0.9633 | 1.1774 | +18.2% |
+| ibm12 | 1.4018 | 1.7261 | +18.8% |
+| ibm13 | 1.0531 | 1.3355 | +21.1% |
+| ibm14 | 1.3016 | 1.5436 | +15.7% |
+| ibm15 | 1.3444 | 1.5159 | +11.3% |
+| ibm16 | 1.2394 | 1.4780 | +16.1% |
+| ibm17 | 1.4357 | 1.6446 | +12.7% |
+| ibm18 | 1.5016 | 1.7722 | +15.3% |
+| **AVG** | **1.2075** | 1.4578 | **+17.2%** |
 
 ## Algorithm
 
@@ -91,7 +91,7 @@ The v5 placer is **not bit-deterministic** on CPU even with `torch.manual_seed`
 identical config and seed=0 produced 0.9097, 0.9128, 0.9147 on ibm01
 (spread ~0.5%).
 
-`HybridV12` exploits this by running the placer **N=8 times** with different
+`HybridV12` exploits this by running the placer **N=12 times** with different
 seeds, then **selecting the placement with the lowest TILOS proxy cost**.
 
 We considered v5's built-in `AP_NUM_SEEDS` ensemble, but it picks by an
@@ -103,11 +103,11 @@ TILOS proxy avoids this misalignment.
 ## How to run
 
 ```bash
-# Best submission (~82 min on 4-core CPU)
-HP12_N=8 uv run evaluate submissions/hybrid_v12_multistart.py --all
+# Best submission (~122 min on 4-core CPU)
+HP12_N=12 uv run evaluate submissions/hybrid_v12_multistart.py --all
 
-# Single benchmark (~4.8 min)
-HP12_N=8 uv run evaluate submissions/hybrid_v12_multistart.py -b ibm01
+# Single benchmark (~7.2 min)
+HP12_N=12 uv run evaluate submissions/hybrid_v12_multistart.py -b ibm01
 
 # Cheaper variant (no multi-start, ~5 min total)
 uv run evaluate submissions/hybrid_v9_best.py --all
@@ -167,6 +167,6 @@ when CUDA is unavailable, but a GPU should make each of the N runs faster).
 
 The score `1.2119` reported here is the contest evaluator's output for one
 specific N=4 run of the wrapper. Because the v5 base is non-deterministic,
-re-running may produce a result in the range ≈ 1.208 – 1.212. Increasing
+re-running may produce a result in the range ≈ 1.207 – 1.210. Increasing
 `HP12_N` (e.g. 8 or 16) further reduces the variance and may shave another
 0.05–0.2% off the average, at proportional runtime cost.
