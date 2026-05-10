@@ -71,7 +71,7 @@ class HybridV12(_BASE):
 
     def __init__(self):
         super().__init__()
-        self._n_runs = int(os.environ.get("HP12_N", "8"))
+        self._n_runs = int(os.environ.get("HP12_N", "12"))
 
     def place(self, benchmark: Benchmark) -> torch.Tensor:
         plc = _load_plc(benchmark)
