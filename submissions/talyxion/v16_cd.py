@@ -170,6 +170,42 @@ def cd_refine(fe, plc, benchmark, base_pos, time_budget):
             if best_cand_fast < cur_fast - 1e-9:
                 cur_fast = best_cand_fast
                 improved = True
+
+        # ── Swap phase: exchange positions of two similar-area macros ────
+        # Non-local moves that coordinate descent cannot reach.
+        n_swaps = max(300, len(movable_idx) * 5)
+        for _ in range(n_swaps):
+            if time.time() - t0 > time_budget:
+                break
+            ii = int(movable_idx[np_rng.integers(len(movable_idx))])
+            jj = int(movable_idx[np_rng.integers(len(movable_idx))])
+            if ii == jj:
+                continue
+            area_i = sizes[ii, 0] * sizes[ii, 1]
+            area_j = sizes[jj, 0] * sizes[jj, 1]
+            if area_j < 0.5 * area_i or area_j > 2.0 * area_i:
+                continue
+            oxi = cur[ii, 0]; oyi = cur[ii, 1]
+            oxj = cur[jj, 0]; oyj = cur[jj, 1]
+            nxi = min(max(oxj, hw[ii]), cw - hw[ii])
+            nyi = min(max(oyj, hh[ii]), ch - hh[ii])
+            nxj = min(max(oxi, hw[jj]), cw - hw[jj])
+            nyj = min(max(oyi, hh[jj]), ch - hh[jj])
+            cur[ii, 0] = nxi; cur[ii, 1] = nyi
+            cur[jj, 0] = nxj; cur[jj, 1] = nyj
+            if _overlaps_at(cur, hw, hh, ii, nh, nxi, nyi) or \
+               _overlaps_at(cur, hw, hh, jj, nh, nxj, nyj):
+                cur[ii, 0] = oxi; cur[ii, 1] = oyi
+                cur[jj, 0] = oxj; cur[jj, 1] = oyj
+                continue
+            f, _, _, _ = fe.proxy(cur)
+            if f < cur_fast - 1e-9:
+                cur_fast = f
+                improved = True
+            else:
+                cur[ii, 0] = oxi; cur[ii, 1] = oyi
+                cur[jj, 0] = oxj; cur[jj, 1] = oyj
+
         # checkpoint
         if cur_fast < best_fast - 1e-12:
             best_fast = cur_fast
