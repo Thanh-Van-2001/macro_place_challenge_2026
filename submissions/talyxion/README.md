@@ -1,6 +1,6 @@
 # Team Talyxion — Submission
 
-**Score:** AVG **1.1631** across 17 IBM ICCAD04 benchmarks
+**Score:** AVG **1.1593** across 17 IBM ICCAD04 benchmarks
 **Algorithm:** Tuned analytical placer + multi-start + fast-proxy coordinate-descent / swap refinement
 **Runtime:** ~105 min total on a 4-core CPU (≈6 min per benchmark, well under the 1 h/bench cap)
 **Validity:** All 17 benchmarks VALID, 0 overlaps
