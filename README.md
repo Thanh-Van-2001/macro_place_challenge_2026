@@ -7,10 +7,10 @@
 Partcl and Hudson River Trading are excited to co-host a competition to solve the macro placement problem. 
 
 > **🚀 Our submission lives here.** This fork is **Thanh-Van-2001** (team Talyxion).
-> Our placer (`submissions/talyxion/placer.py`) achieves **AVG 1.1631** on the 17 IBM
-> ICCAD04 benchmarks — beating the RePlAce baseline by **20.2%** and the SA baseline by
+> Our placer (`submissions/talyxion/placer.py`) achieves **AVG 1.1593** on the 17 IBM
+> ICCAD04 benchmarks — beating the RePlAce baseline by **20.5%** and the SA baseline by
 > **45.3%**, all 17 VALID with 0 overlaps. Tuned analytical placer + multi-start +
-> fast-proxy coordinate-descent & swap refinement. See [`SUBMISSION.md`](SUBMISSION.md).
+> fast-proxy coordinate-descent, swap & numerical-gradient refinement. See [`SUBMISSION.md`](SUBMISSION.md).
 
 ---
 
