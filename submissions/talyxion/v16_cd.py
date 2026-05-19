@@ -101,6 +101,23 @@ def _overlaps_at(pos, hw, hh, idx, n_hard, nx, ny):
     return False
 
 
+def _lns_kick(cur, movable_idx, hw, hh, cw, ch, nh, frac, np_rng):
+    """LNS escape: relocate a random subset of macros to random overlap-free
+    positions, keeping the placement valid throughout."""
+    n_kick = max(1, int(len(movable_idx) * frac))
+    chosen = np_rng.choice(movable_idx, size=min(n_kick, len(movable_idx)),
+                           replace=False)
+    for idx in chosen:
+        idx = int(idx)
+        for _ in range(30):
+            nx = hw[idx] + np_rng.random() * (cw - 2 * hw[idx])
+            ny = hh[idx] + np_rng.random() * (ch - 2 * hh[idx])
+            if not _overlaps_at(cur, hw, hh, idx, nh, nx, ny):
+                cur[idx, 0] = nx
+                cur[idx, 1] = ny
+                break
+
+
 def cd_refine(fe, plc, benchmark, base_pos, time_budget):
     """Coordinate descent on the fast proxy. Returns best (pos_np, real_proxy)."""
     nh = benchmark.num_hard_macros
@@ -127,7 +144,9 @@ def cd_refine(fe, plc, benchmark, base_pos, time_budget):
     np_rng = np.random.default_rng(777)
     t0 = time.time()
     K = int(os.environ.get("HP16_K", "10"))   # candidates per macro
-    max_rounds = int(os.environ.get("HP16_ROUNDS", "40"))
+    max_rounds = int(os.environ.get("HP16_ROUNDS", "1000"))
+    lns_frac = float(os.environ.get("HP16_LNS_FRAC", "0.15"))
+    n_kicks = 0
 
     for rnd in range(max_rounds):
         if time.time() - t0 > time_budget:
@@ -211,8 +230,16 @@ def cd_refine(fe, plc, benchmark, base_pos, time_budget):
             best_fast = cur_fast
             best = cur.copy()
         if not improved:
-            break
+            # CD+swap converged → LNS escape: kick from best and continue.
+            if time.time() - t0 > time_budget:
+                break
+            cur = best.copy()
+            _lns_kick(cur, movable_idx, hw, hh, cw, ch, nh, lns_frac, np_rng)
+            cur_fast, _, _, _ = fe.proxy(cur)
+            n_kicks += 1
 
+    sys.stderr.write(f"[v16] cd rounds done, lns kicks={n_kicks}\n")
+    sys.stderr.flush()
     # final: ensure no overlap, return real proxy of best
     if _count_overlaps(best, hw, hh, nh) > 0:
         best = base_pos.astype(np.float64).copy()
