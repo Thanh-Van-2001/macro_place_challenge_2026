@@ -1,172 +1,121 @@
-# Our Submission — `HybridV12`
+# Our Submission — `HybridV21` (team Talyxion)
 
-**Team:** Thanh-Van-2001
-**Algorithm:** Tuned analytical placer + real-proxy multi-start — `submissions/hybrid_v12_multistart.py`
-**Score:** AVG **1.2075** across 17 IBM ICCAD04 benchmarks
-**Runtime:** ~122 min total on a 4-core CPU (≈7.2 min per benchmark, well under the 1 h/bench cap)
-**Validity:** All 17 benchmarks VALID, 0 overlaps
+**Team:** Thanh-Van-2001 (Talyxion)
+**Entry point:** `submissions/talyxion/placer.py`
+**Algorithm:** Multi-start analytical base → numerical-gradient descent → coordinate-descent / swap polish, all on a fast re-implementation of the contest proxy
+**Score:** AVG **1.1531** across 17 IBM ICCAD04 benchmarks
+**Runtime:** ≈17 min per benchmark on a 4-core CPU (well under the 1 h/bench cap)
+**Validity:** all 17 benchmarks VALID, 0 overlaps
 
-## Result vs baselines and competitors
+## Result vs baselines
 
 | | Score | Δ vs us |
 |---|---:|---:|
-| #1 vmallela (leaderboard) | 1.0109 | -16.6% |
-| #2 Cezar (leaderboard) | 1.037 | -14.5% |
-| **Ours (HybridV12)** | **1.2075** | — |
-| #3 KLA MACH (leaderboard) | 1.2121 | +0.38% |
-| #4 Hoop Dreams (leaderboard) | 1.2207 | +1.0% |
-| RePlAce baseline | 1.4578 | +20.7% |
-| SA baseline | 2.1251 | +75.9% |
+| **Ours (HybridV21)** | **1.1531** | — |
+| RePlAce baseline | 1.4578 | +20.9% |
+| SA baseline | 2.1251 | +45.7% |
 
-We beat the RePlAce baseline by **17.2%** on average proxy cost and the SA
-baseline by **43.2%**. Estimated leaderboard rank: **3** (just past KLA MACH).
+We beat the RePlAce baseline by **20.9%** and the SA baseline by **45.7%** on
+average proxy cost.
 
 ## Per-benchmark detail
 
 | Benchmark | Ours | RePlAce | vs RePlAce |
 |---|---:|---:|---:|
-| ibm01 | 0.9112 | 0.9976 | +8.7% |
-| ibm02 | 1.2891 | 1.8370 | +29.8% |
-| ibm03 | 1.1024 | 1.3222 | +16.6% |
-| ibm04 | 1.1225 | 1.3024 | +13.8% |
-| ibm06 | 1.3063 | 1.6187 | +19.3% |
-| ibm07 | 1.2158 | 1.4633 | +16.9% |
-| ibm08 | 1.2248 | 1.4285 | +14.3% |
-| ibm09 | 0.9404 | 1.1194 | +16.0% |
-| ibm10 | 1.1734 | 1.5009 | +21.8% |
-| ibm11 | 0.9633 | 1.1774 | +18.2% |
-| ibm12 | 1.4018 | 1.7261 | +18.8% |
-| ibm13 | 1.0531 | 1.3355 | +21.1% |
-| ibm14 | 1.3016 | 1.5436 | +15.7% |
-| ibm15 | 1.3444 | 1.5159 | +11.3% |
-| ibm16 | 1.2394 | 1.4780 | +16.1% |
-| ibm17 | 1.4357 | 1.6446 | +12.7% |
-| ibm18 | 1.5016 | 1.7722 | +15.3% |
-| **AVG** | **1.2075** | 1.4578 | **+17.2%** |
+| ibm01 | 0.8738 | 0.9976 | +12.4% |
+| ibm02 | 1.1986 | 1.8370 | +34.8% |
+| ibm03 | 1.0545 | 1.3222 | +20.2% |
+| ibm04 | 1.0399 | 1.3024 | +20.2% |
+| ibm06 | 1.2677 | 1.6187 | +21.7% |
+| ibm07 | 1.1800 | 1.4633 | +19.4% |
+| ibm08 | 1.2028 | 1.4285 | +15.8% |
+| ibm09 | 0.8867 | 1.1194 | +20.8% |
+| ibm10 | 1.0381 | 1.5009 | +30.8% |
+| ibm11 | 0.8806 | 1.1774 | +25.2% |
+| ibm12 | 1.3525 | 1.7261 | +21.6% |
+| ibm13 | 0.9805 | 1.3355 | +26.6% |
+| ibm14 | 1.2285 | 1.5436 | +20.4% |
+| ibm15 | 1.3313 | 1.5159 | +12.2% |
+| ibm16 | 1.1777 | 1.4780 | +20.3% |
+| ibm17 | 1.4002 | 1.6446 | +14.9% |
+| ibm18 | 1.5086 | 1.7722 | +14.9% |
+| **AVG** | **1.1531** | 1.4578 | **+20.9%** |
 
 ## Algorithm
 
-`HybridV12` is a thin wrapper around the publicly released v5 analytical
-placer from the `v-x-zhang` fork of this repo (Apache 2.0). The v5 placer
-optimises macro centres by gradient descent on a differentiable loss:
+`HybridV21` is a three-stage pipeline. All refinement code is our own; only
+the analytical base is reused (see Credits).
 
-```
-L = w_wl × HPWL
-  + w_ov × Σ pairwise_overlap_area
-  + w_bd × Σ boundary_violation
-  + w_rudy × RUDY_congestion_proxy
-  + w_den × ePlace_density
-```
+### 1. Multi-start analytical base (N=10)
 
-Our contribution is two-fold:
+The v5 analytical placer optimises macro centres by gradient descent on a
+differentiable loss `HPWL + overlap + boundary + RUDY-congestion + ePlace
+density`. It is not bit-deterministic on CPU, so we run it **10 times** with
+different seeds and keep the placement with the lowest *true* TILOS proxy
+cost. Tuned base hyper-parameters (swept on the IBM panel):
+`AP_RUDY_W=6.0, AP_DEN_W=3.0, AP_ITERS=350, AP_LR=0.003,
+AP_OV_START=3.0, AP_DEN_CARRIER=rect`.
 
-### 1. Hyperparameter tuning (gives 1.2130 single-run)
+### 2. Numerical-gradient descent (`numgrad_refine`)
 
-Sweeping each parameter on the full 17-benchmark IBM panel produced:
+Coordinate descent moves one macro at a time and gets stuck coordinate-wise.
+Instead we estimate, for every movable hard macro, the finite-difference
+gradient of the **real contest proxy** (via our fast evaluator), then step
+all macros simultaneously along the negative gradient — coordinated moves CD
+cannot make. Each projected step resolves overlaps and backtracks the
+learning rate if the proxy did not improve.
 
-| Param | Default | **Tuned** | Effect |
-|---|---:|---:|---|
-| `AP_RUDY_W` | 1.0 | **3.0** | Stronger RUDY congestion penalty |
-| `AP_ITERS` | 1500 | **350** | Default overshoots; less is more |
-| `AP_LR` | 0.005 | **0.003** | Slower, more stable convergence |
-| `AP_DEN_W` | 5.0 | **1.5** | Much less density penalty |
-| `AP_OV_START` | 20.0 | **3.0** | Smaller initial overlap penalty → more exploration early |
-| `AP_DEN_CARRIER` | bell | **rect** | Sharper density profile |
+### 3. Coordinate-descent + swap polish (`cd_polish`)
 
-Sweep trajectory:
-```
-v5 default                                AVG 1.2813   ↓
-+ RUDY_W: 1.0 → 3.0                       AVG 1.2630   ↓
-+ ITERS: 1500 → 350                       AVG 1.2447   ↓
-+ LR: 0.005 → 0.003                       AVG 1.2435   ↓
-+ DEN_W: 5.0 → 1.5                        AVG 1.2297   ↓
-+ OV_START: 20.0 → 3.0                    AVG 1.2173   ↓
-+ DEN_CARRIER: bell → rect                AVG 1.2130   ✓ V9 BEST
-```
+A final pass: for each movable hard macro, try K multi-scale Gaussian
+candidate moves and accept the best strict improvement with zero overlap;
+plus a swap phase that exchanges positions of similar-area macro pairs.
 
-### 2. Real-proxy multi-start (gives 1.2119 final)
+The pipeline returns the best of the three stages, scored by the **unmodified
+TILOS evaluator**. The fast evaluators only change search SPEED.
 
-The v5 placer is **not bit-deterministic** on CPU even with `torch.manual_seed`
-— some op order or BLAS path leaks randomness. Three runs of the placer with
-identical config and seed=0 produced 0.9097, 0.9128, 0.9147 on ibm01
-(spread ~0.5%).
+### Fast proxy evaluator (`fasteval.py`, `fast_congestion.py`)
 
-`HybridV12` exploits this by running the placer **N=12 times** with different
-seeds, then **selecting the placement with the lowest TILOS proxy cost**.
-
-We considered v5's built-in `AP_NUM_SEEDS` ensemble, but it picks by an
-INTERNAL surrogate (HPWL + density approximation + RUDY top-10%) which is
-not perfectly aligned with the contest proxy — when we tried `AP_NUM_SEEDS=2/3`
-during the sweep, scores went UP (1.2460/1.2582). Selecting by the actual
-TILOS proxy avoids this misalignment.
+A faithful re-implementation of the TILOS `PlacementCost`: vectorized HPWL
+(matches `plc.get_cost()` exactly), Numba density, and a Numba re-implementation
+of the TILOS routing-congestion model. Full proxy: ~1.6 s (TILOS) → ~3 ms.
+This 500× speed-up is what makes gradient/CD refinement on the real objective
+feasible. Verified to match the TILOS evaluator to ~1e-3.
 
 ## How to run
 
 ```bash
-# Best submission (~122 min on 4-core CPU)
-HP12_N=12 uv run evaluate submissions/hybrid_v12_multistart.py --all
-
-# Single benchmark (~7.2 min)
-HP12_N=12 uv run evaluate submissions/hybrid_v12_multistart.py -b ibm01
-
-# Cheaper variant (no multi-start, ~5 min total)
-uv run evaluate submissions/hybrid_v9_best.py --all
+uv run evaluate submissions/talyxion/placer.py --all     # all 17
+uv run evaluate submissions/talyxion/placer.py -b ibm01  # single benchmark
 ```
 
-The wrapper sets the tuned env vars and delegates to
-`submissions/vxzhang/v5_rudy_w1_placer.py`.
-
-## Other files in this fork
-
-- `submissions/hybrid_v9_best.py` — single-run version of the same tuned config
-  (AVG 1.2130 in 5 min, the previous best). Kept for fast iteration.
-- `submissions/hybrid_v11_cd.py` — earlier attempt at real-proxy CD post-processing
-  (chuanqi-style). Net negative because run-to-run noise of v5 base dominated
-  the per-macro CD gain. Kept as a record of what didn't work.
-- `submissions/hybrid_v10_flip.py` — auto-flip post-processing wrapper.
-  Helped some benchmarks but hurt average (1.2162). Kept for reference.
-- `submissions/hybrid_placer_v7_fast.py` — own from-scratch Numba-JIT
-  simulated-annealing placer with spatial-grid overlap detection.
-  Achieves AVG 1.4758 (rank ~22). Kept for reference.
-- `submissions/hybrid_placer_v8.py` — v7 + multi-thread + LNS kick + adaptive budget.
-  Marginal improvement over v7. Kept for reference.
-- `submissions/hybrid_placer.py` — earlier hybrid SA variant (pre-v7).
-- `submissions/vxzhang/v3,v4,v5*.py` — original v-x-zhang public submissions, kept
-  as reference for the algorithm we tuned. Unmodified.
+Knobs (env vars, defaults shown): `HP21_N=10` multi-start count,
+`HP21_GD_SEC=650` numgrad budget, `HP21_CD_SEC=750` CD budget.
 
 ## What we tried but rejected
 
-- **Auto-flip post-processing** (jaydenpiao idea): apply x/y/xy reflections to
-  the placement and pick the lowest-proxy variant. Helped 6 benchmarks, hurt 11.
-  Net AVG worse (1.2162 vs 1.2130).
-- **Real-proxy CD post-processing** (chuanqichen phase6 idea): for each macro,
-  try ±delta moves at multiple scales and accept only if proxy improves.
-  Too slow with the TILOS proxy as the oracle (~50 ms per call); the v5 base's
-  run-to-run noise (~0.5%) swamped the CD's per-macro improvement (~0.05%).
-- **`AP_NUM_SEEDS=2/3`** ensemble (v5 built-in): picks by a surrogate, not the
-  real proxy. Scored worse (1.2460/1.2582) than single-seed.
-- `AP_ITERS` outside [300, 400], `AP_OV_END=1500/3000`, `AP_DEN_W=10/0.5`,
-  `AP_LR=0.002/0.0035`, `AP_BD_W=50`, `AP_EPLACE_W=1.0`,
-  `AP_DEN_MODE=eplace`, `AP_ANCHOR_K=1` — all worse than the chosen values.
+- **Wire-mask greedy construction** (WireMask-BBO style, full proxy-cost mask):
+  a constructive greedy commits each macro myopically and cannot compete with
+  the analytical base — scored ~1.42.
+- **DREAMPlace integration**: built CPU-only and ran it via a Bookshelf
+  converter; vanilla DREAMPlace optimises HPWL+density but not the TILOS
+  routing congestion, so it scored worse than ours on congestion-heavy
+  benchmarks (ibm12 ≈ 1.53).
+- **Hotspot-targeted congestion refinement**, SA refinement, multi-cycle
+  GD↔CD, longer analytical iterations — all converge to the same local
+  optimum the pipeline already reaches.
 
 ## Credits
 
-The underlying analytical placer is from the `v-x-zhang` fork of this repo
-(file `submissions/versions/v5_rudy_w1_placer.py`), licensed Apache 2.0
-under the parent repository. Our contribution is the systematic
-hyperparameter sweep, the real-proxy multi-start wrapper, and the analysis
-that identified v5's run-to-run noise as exploitable signal.
+The analytical base placer (`submissions/vxzhang/v5_rudy_w1_placer.py`) is
+from the public `v-x-zhang` fork of this repository (Apache 2.0). Our own
+contributions: the fast Numba proxy evaluators (`fast_congestion.py`,
+`fasteval.py`), the real-proxy multi-start selection, the numerical-gradient
+refinement and the coordinate-descent + swap polish (`v21_numgrad.py` =
+`placer.py`).
 
 ## Reproducibility
 
-All sweep experiments and benchmark runs were performed on a 4-core CPU
-server (15 GiB RAM, no GPU). The contest evaluator runs on
-`pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime`; on GPU hardware our
-wrapper should produce comparable scores (the v5 algorithm defaults to CPU
-when CUDA is unavailable, but a GPU should make each of the N runs faster).
-
-The score `1.2119` reported here is the contest evaluator's output for one
-specific N=4 run of the wrapper. Because the v5 base is non-deterministic,
-re-running may produce a result in the range ≈ 1.207 – 1.210. Increasing
-`HP12_N` (e.g. 8 or 16) further reduces the variance and may shave another
-0.05–0.2% off the average, at proportional runtime cost.
+All runs were on a 4-core CPU server (15 GiB RAM, no GPU). Because the v5
+base is non-deterministic, re-running may produce a result within ≈±0.3% of
+1.1531; the N=10 multi-start keeps that variance small.

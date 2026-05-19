@@ -36,10 +36,10 @@ if _TVDIR not in sys.path:
     sys.path.insert(0, _TVDIR)
 from fasteval import FastEval
 
-os.environ.setdefault("AP_RUDY_W", "3.0")
+os.environ.setdefault("AP_RUDY_W", "6.0")
 os.environ.setdefault("AP_ITERS", "350")
 os.environ.setdefault("AP_LR", "0.003")
-os.environ.setdefault("AP_DEN_W", "1.5")
+os.environ.setdefault("AP_DEN_W", "3.0")
 os.environ.setdefault("AP_OV_START", "3.0")
 os.environ.setdefault("AP_DEN_CARRIER", "rect")
 
@@ -351,9 +351,9 @@ class HybridV21(_BASE):
 
     def __init__(self):
         super().__init__()
-        self._n_runs = int(os.environ.get("HP21_N", "4"))
-        self._gd_budget = float(os.environ.get("HP21_GD_SEC", "200"))
-        self._cd_budget = float(os.environ.get("HP21_CD_SEC", "200"))
+        self._n_runs = int(os.environ.get("HP21_N", "10"))
+        self._gd_budget = float(os.environ.get("HP21_GD_SEC", "650"))
+        self._cd_budget = float(os.environ.get("HP21_CD_SEC", "750"))
 
     def place(self, benchmark: Benchmark) -> torch.Tensor:
         plc = _load_plc(benchmark)
