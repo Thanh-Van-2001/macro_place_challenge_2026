@@ -184,6 +184,8 @@ class HybridV24(NG._BASE):
         self._cd_sec = float(os.environ.get("HP24_CD_SEC", "150"))
         self._ng_sec = float(os.environ.get("HP24_NG_SEC", "220"))
         self._fcd_sec = float(os.environ.get("HP24_FCD_SEC", "260"))
+        self._sa_cap = float(os.environ.get("HP24_SA_CAP", "3200"))
+        self._sa_min = float(os.environ.get("HP24_SA_MIN", "120"))
 
     def place(self, benchmark: Benchmark) -> torch.Tensor:
         plc = _load_plc(benchmark)
@@ -243,6 +245,22 @@ class HybridV24(NG._BASE):
             if NG._count_overlaps(cp, hw_, hh_, nh) == 0 and cc < fb_f:
                 fb, fb_f = cp, cc
             best, best_f = fb, fb_f
+
+        # cold-SA final escape: massive single-macro SA (incl. SOFT macros,
+        # which CD never touches) within the remaining per-bench budget.
+        sa_budget = self._sa_cap - (time.time() - t0)
+        if sa_budget >= self._sa_min and NG._count_overlaps(best, hw_, hh_, nh) == 0:
+            try:
+                import tx_sa
+                sa_pos, sa_f = tx_sa.cold_sa(fe, plc, benchmark, best, sa_budget)
+                if sa_f < best_f - 1e-9 and NG._count_overlaps(sa_pos, hw_, hh_, nh) == 0:
+                    best_f, best = sa_f, sa_pos
+                sys.stderr.write(f"[v24] {benchmark.name} cold_sa ={best_f:.5f} "
+                                 f"(budget {sa_budget:.0f}s)\n")
+                sys.stderr.flush()
+            except Exception as _e:
+                sys.stderr.write(f"[v24] {benchmark.name} cold_sa skip: {repr(_e)}\n")
+                sys.stderr.flush()
 
         sys.stderr.write(f"[v24] {benchmark.name} FINAL ={best_f:.5f} "
                          f"[{time.time()-t0:.0f}s]\n")
