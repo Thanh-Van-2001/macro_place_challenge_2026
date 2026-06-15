@@ -97,3 +97,6 @@ submissions/others/
 logs/
 .gitignore_local
 submissions/v14_final/
+
+# GIF render position cache (not part of submission)
+.gifcache_*.npz
